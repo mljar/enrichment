@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enrichment"
+version = "0.1.0"
+description = "AI Data Enrichment for Pandas DataFrame"
+authors = [
+  { name = "MLJAR Sp. z o.o." }
+]
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = ["dataframe", "enrichment", "openai", "sentiment"]
+urls = { "Homepage" = "https://github.com/mljar/enrichment" }
+dependencies = [
+  "pandas>=1.0.0",
+  "openai>=0.27.0",
+  "tqdm>=4.0.0"
+]
