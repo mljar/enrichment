@@ -1,6 +1,6 @@
 # Data Enrichment with AI for Pandas DataFrame 🐼💰
 
-The `enrichment` library lets you give your pandas DataFrame a boost with AI. No fuss, no extra code—just tell it what you need in plain English. Need sentiment labels, clean addresses, language tags, or keywords? One call to `enrich()` adds a brand-new column of results.
+The `enrichment` library lets you give your pandas DataFrame a new column data created with AI. Just tell it what you need in plain English. Need sentiment labels, clean addresses, language tags, or keywords? One call to `enrich()` adds a new column of results.
 
 Why you’ll love it:
 - **Easy to use:** Pass in your DataFrame, describe what you want, and you’re done.
