@@ -1,244 +1,223 @@
-# Data Enrichment with AI for Pandas DataFrame 🐼💰
+# AI Data Enrichment for pandas
 
-The `enrichment` library lets you give your pandas DataFrame a new column data created with AI. Just tell it what you need in plain English. Need sentiment labels, clean addresses, language tags, or keywords? One call to `enrich()` adds a new column of results.
+`enrichment` adds AI-generated columns to pandas DataFrames. Describe the value
+you need, select one or more input columns, and call `enrich()`.
 
-Why you’ll love it:
-- **Easy to use:** Pass in your DataFrame, describe what you want, and you’re done.
-- **Flexible:** Works with any OpenAI-style model—pick the balance you like between speed and cost.
-- **Ready for real work:** Built-in batching, progress bars, and smooth pandas integration.
-- **Anything you can name:** From sentiment and topics to translations and more—if you can write it, `enrich()` can handle it.
-
-Give it a try and watch your data come to life!
-
-## Examples
-
-Below are several common enrichment tasks. Each example uses a DataFrame and demonstrates how to call `enrich` with an appropriate prompt, along with expected output.
-
-### 1. Sentiment Analysis
 ```python
 import pandas as pd
 from enrichment import enrich
 
-# Sample reviews
-df_sentiment = pd.DataFrame({
-    "review": [
-        "I loved the product, it was fantastic!",
-        "Terrible experience, will not buy again.",
-        "It was okay, nothing special.",
-        "Absolutely amazing, exceeded expectations!",
-        "Worst purchase ever, very disappointed."
-    ]
-})
+df = pd.DataFrame(
+    {
+        "review": [
+            "I loved the product!",
+            "It arrived broken.",
+            "It was okay.",
+        ]
+    }
+)
 
-# Perform sentiment analysis
-enriched_sentiment = enrich(
-    df_sentiment,
+result = enrich(
+    df,
     input_col="review",
     output_col="sentiment",
-    prompt="Classify sentiment"
+    prompt="Classify sentiment as positive, negative, or neutral",
 )
-print(enriched_sentiment)
-```
-Expected output:
-```plaintext
-                                       review sentiment
-0      I loved the product, it was fantastic!  Positive
-1    Terrible experience, will not buy again.  Negative
-2               It was okay, nothing special.   Neutral
-3  Absolutely amazing, exceeded expectations!  Positive
-4     Worst purchase ever, very disappointed.  Negative
-
 ```
 
-### 2. Address Format Standardization & Cleaning
-```python
-import pandas as pd
-from enrichment import enrich
-
-# Sample addresses
-df_address = pd.DataFrame({
-    "address": [
-        "123 main st., Apt#4, new york, ny",
-        "456 Elm Street Suite 5 Chicago IL",
-        "789 Broadway Blvd Los Angeles,CA",
-        "101 first avenue,San Francisco CA",
-        "202 Second St. Apt. 10, Boston MA"
-    ]
-})
-
-# Standardize and clean addresses
-enriched_address = enrich(
-    df_address,
-    input_col="address",
-    output_col="clean_address",
-    prompt="Standardize and clean this address to a consistent format"
-)
-print(enriched_address)
-```
-Expected output:
-```plaintext
-                             address                                clean_address
-0  123 main st., Apt#4, new york, ny             123 Main St, Apt 4, New York, NY
-1  456 Elm Street Suite 5 Chicago IL               456 Elm St, Ste 5, Chicago, IL
-2   789 Broadway Blvd Los Angeles,CA           789 Broadway Blvd, Los Angeles, CA
-3  101 first avenue,San Francisco CA             101 First Ave, San Francisco, CA
-4  202 Second St. Apt. 10, Boston MA  202 Second Street, Apartment 10, Boston, MA
-
-```
-
-### 3. Keyword Extraction
-```python
-import pandas as pd
-from enrichment import enrich
-
-# Sample text paragraphs
-df_keywords = pd.DataFrame({
-    "text": [
-        "ChatGPT is a powerful language model developed by OpenAI.",
-        "Python's pandas library is excellent for data manipulation.",
-        "The Eiffel Tower is one of the most famous landmarks in Paris.",
-        "Machine learning and AI are transforming industries.",
-        "Renewable energy sources include solar, wind, and hydroelectric power."
-    ]
-})
-
-# Extract keywords
-enriched_keywords = enrich(
-    df_keywords,
-    input_col="text",
-    output_col="keywords",
-    prompt="Extract the top 3 keywords"
-)
-print(enriched_keywords)
-```
-Expected output:
-```plaintext
-                                                text                          keywords
-0  ChatGPT is a powerful language model developed...   ChatGPT, language model, OpenAI
-1  Python's pandas library is excellent for data ...        pandas, data, manipulation
-2  The Eiffel Tower is one of the most famous lan...    Eiffel Tower, landmarks, Paris
-3  Machine learning and AI are transforming indus...  Machine learning, AI, industries
-4  Renewable energy sources include solar, wind, ...     renewable energy, solar, wind
-```
-
-### 4. Language Detection
-```python
-import pandas as pd
-from enrichment import enrich
-
-# Sample multilingual sentences
-df_language = pd.DataFrame({
-    "sentence": [
-        "Bonjour, comment ça va?",
-        "Hello, how are you?",
-        "Hola, ¿cómo estás?",
-        "Hallo, wie geht es dir?",
-        "Ciao, come stai?",
-        "Cześć, jak się masz?"
-    ]
-})
-
-
-# Detect language
-enriched_language = enrich(
-    df_language,
-    input_col="sentence",
-    output_col="language",
-    prompt="Detect the language of this sentence"
-)
-print(enriched_language)
-```
-Expected output:
-```plaintext
-                  sentence language
-0  Bonjour, comment ça va?   French
-1      Hello, how are you?  English
-2       Hola, ¿cómo estás?  Spanish
-3  Hallo, wie geht es dir?   German
-4         Ciao, come stai?  Italian
-5     Cześć, jak się masz?   Polish
-```
-
-### 5. Text Classification
-```python
-import pandas as pd
-from enrichment import enrich
-
-# Sample news headlines
-df_classify = pd.DataFrame({
-    "headline": [
-        "Local team wins championship after dramatic final",
-        "New species of bird discovered in Amazon rainforest",
-        "Stock markets rally as tech stocks soar",
-        "Study reveals health benefits of green tea",
-        "Government announces new climate policy"
-    ]
-})
-
-# Classify headlines into categories: sports, science, finance, health, politics
-enriched_classify = enrich(
-    df_classify,
-    input_col="headline",
-    output_col="category",
-    prompt="Classify this headline into one of: sports, science, finance, health, politics"
-)
-print(enriched_classify)
-```
-Expected output:
-```plaintext
-                                            headline  category
-0  Local team wins championship after dramatic final    sports
-1  New species of bird discovered in Amazon rainf...   science
-2            Stock markets rally as tech stocks soar   finance
-3         Study reveals health benefits of green tea    health
-4            Government announces new climate policy  politics
-
-```
+The original DataFrame is not modified. Requests run concurrently, identical
+inputs are processed once, temporary provider failures are retried, and result
+order always matches the source DataFrame.
 
 ## Installation
-
-Use the following command to install this package:
 
 ```bash
 pip install enrichment
 ```
 
-## API Reference
+For the default OpenAI provider, set your API key:
+
+```bash
+export OPENAI_API_KEY="your-api-key"
+```
+
+Then call `enrich()` without configuring a provider. You can also pass
+`api_key=` directly for compatibility with earlier versions.
+
+## Use several input columns
+
+```python
+result = enrich(
+    df,
+    input_cols=["company_name", "website"],
+    output_col="industry",
+    prompt="Determine the company's industry",
+)
+```
+
+The selected values are sent as structured JSON, keeping field names and values
+unambiguous.
+
+## OpenAI-compatible providers
+
+Use any service exposing an OpenAI-compatible Chat Completions endpoint:
+
+```python
+from enrichment import OpenAICompatibleProvider, enrich
+
+provider = OpenAICompatibleProvider(
+    base_url="http://127.0.0.1:1234/v1",
+    model="local-model",
+)
+
+result = enrich(
+    df,
+    input_col="review",
+    output_col="sentiment",
+    prompt="Classify sentiment",
+    provider=provider,
+)
+```
+
+Remote compatible providers can receive a key and additional headers:
+
+```python
+provider = OpenAICompatibleProvider(
+    base_url="https://provider.example/v1",
+    api_key="your-api-key",
+    model="provider/model-name",
+    headers={"X-App": "My application"},
+)
+```
+
+## Performance and reliability
+
+The default concurrency is five requests. It can be adjusted for the selected
+provider:
+
+```python
+result = enrich(
+    df,
+    input_col="text",
+    output_col="topic",
+    prompt="Return the main topic",
+    max_concurrency=10,
+    max_retries=3,
+)
+```
+
+HTTP 429 responses, timeouts, network failures, and temporary server failures
+are retried with backoff. A provider's `Retry-After` response is honored.
+
+This release performs concurrent interactive requests. It does not yet submit
+provider-side asynchronous batch jobs.
+
+## Missing values and errors
+
+Rows where all selected inputs are missing are skipped and receive `pd.NA`.
+By default, enrichment stops when a request fails after retries. To keep
+processing and store `pd.NA` for failures:
+
+```python
+result = enrich(
+    df,
+    input_col="text",
+    output_col="topic",
+    prompt="Return the main topic",
+    on_error="keep",
+)
+```
+
+## Execution report
+
+Request a report when you need usage and failure details:
+
+```python
+result, report = enrich(
+    df,
+    input_col="text",
+    output_col="topic",
+    prompt="Return the main topic",
+    return_report=True,
+)
+
+print(report.completed)
+print(report.unique_requests)
+print(report.retries)
+print(report.input_tokens, report.output_tokens)
+print(report.errors)
+```
+
+Token usage is available when the provider reports it.
+
+## Runtime providers
+
+Applications embedding `enrichment` can register a provider for automatic use:
+
+```python
+from enrichment import register_provider
+
+register_provider("application-runtime", provider, priority=100)
+```
+
+Provider selection follows this order:
+
+1. `provider=` passed to `enrich()`
+2. Highest-priority registered runtime provider
+3. OpenAI configured through `api_key=` or `OPENAI_API_KEY`
+
+This hook is intended for integrations such as MLJAR Studio, where users should
+be able to enrich data without entering provider configuration in every
+notebook.
+
+## Custom providers
+
+Implement the small synchronous provider interface:
+
+```python
+from enrichment import CompletionResult, Provider
+
+
+class MyProvider(Provider):
+    name = "my-provider"
+    default_model = "my-model"
+
+    def complete(self, request):
+        value = call_my_service(
+            instructions=request.instructions,
+            input_data=request.input_data,
+            model=request.model or self.default_model,
+        )
+        return CompletionResult(content=value)
+```
+
+## API
 
 ```python
 enrich(
-    df: pandas.DataFrame,
-    input_col: str,
-    output_col: str,
-    prompt: str,
-    model: str = "gpt-4.1",
-    api_key: Optional[str] = None,
-    show_progress: bool = True
-) -> pandas.DataFrame
+    df,
+    input_col=None,
+    output_col=None,
+    prompt=None,
+    model=None,
+    api_key=None,
+    show_progress=True,
+    *,
+    input_cols=None,
+    provider=None,
+    max_concurrency=5,
+    max_retries=3,
+    retry_base_delay=0.5,
+    on_error="raise",
+    return_report=False,
+)
 ```
 
-| Parameter      | Type                 | Description                                                                                         |
-| -------------- | -------------------- | --------------------------------------------------------------------------------------------------- |
-| `df`           | `DataFrame`          | The source DataFrame containing text data.                                                         |
-| `input_col`    | `str`                | Column name in `df` holding the input text.                                                       |
-| `output_col`   | `str`                | Name of the new column to store enrichment results.                                               |
-| `prompt`       | `str`                | Task description; model receives `prompt` + input row, forced to output only the result.           |
-| `model`        | `str`, optional      | OpenAI model to use (default: `gpt-4.1`).                                                          |
-| `api_key`      | `str`, optional      | OpenAI API key. If omitted, reads from `OPENAI_API_KEY` environment variable.                      |
-| `show_progress`| `bool`, optional     | Display a tqdm progress bar (default: `True`; set `False` to hide).                                |
+`input_col` and `input_cols` are mutually exclusive.
 
-**Returns:**
-
-- A new `pandas.DataFrame` identical to `df` but with `output_col` populated by model responses.
-
-**Raises:**
-
-- `ValueError` if the model key is not set via `api_key` or `OPENAI_API_KEY`.
-
-## Running Tests
-
-Make sure you have `pytest` installed, then run:
+## Development
 
 ```bash
+python -m pip install -e ".[dev]"
 python -m pytest
 ```

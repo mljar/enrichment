@@ -1,67 +1,93 @@
-import os
+"""Public DataFrame enrichment API."""
+
+from __future__ import annotations
+
+from typing import Optional, Sequence, Tuple, Union
+
 import pandas as pd
-import openai
-from tqdm import tqdm
-from typing import Optional
+
+from .engine import run_enrichment
+from .exceptions import EnrichmentError
+from .models import EnrichmentReport
+from .providers.base import Provider
+from .providers.openai import OpenAIProvider
+from .providers.resolver import resolve_provider
 
 
-def _default_openai_client(api_key: Optional[str] = None) -> None:
-    """
-    Configure OpenAI API key.
-    """
-    key = api_key or os.getenv("OPENAI_API_KEY")
-    if not key:
-        raise ValueError("OpenAI API key must be provided or set in OPENAI_API_KEY.")
-    openai.api_key = key
-
-
-def _get_response(prompt: str, model: str) -> str:
-    """
-    Internal helper to call OpenAI with a prompt and return content.
-    """
-    resp = openai.ChatCompletion.create(
-        model=model,
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return resp.choices[0].message.content.strip()
+def _default_openai_client(api_key: Optional[str] = None) -> OpenAIProvider:
+    """Return the default OpenAI provider (kept for API compatibility)."""
+    return OpenAIProvider(api_key=api_key)
 
 
 def enrich(
     df: pd.DataFrame,
-    input_col: str,
-    output_col: str,
-    prompt: str,
-    model: str = "gpt-4.1",
+    input_col: Optional[str] = None,
+    output_col: Optional[str] = None,
+    prompt: Optional[str] = None,
+    model: Optional[str] = None,
     api_key: Optional[str] = None,
-    show_progress: bool = True
-) -> pd.DataFrame:
+    show_progress: bool = True,
+    *,
+    input_cols: Optional[Sequence[str]] = None,
+    provider: Optional[Provider] = None,
+    max_concurrency: int = 5,
+    max_retries: int = 3,
+    retry_base_delay: float = 0.5,
+    on_error: str = "raise",
+    return_report: bool = False,
+) -> Union[pd.DataFrame, Tuple[pd.DataFrame, EnrichmentReport]]:
+    """Add an AI-generated column to a pandas DataFrame.
+
+    ``input_col`` remains available for single-column enrichment. Use
+    ``input_cols`` when the task needs values from several columns.
     """
-    Enriches `df` by iterating over each row and applying a prompt, with an optional progress bar.
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("df must be a pandas DataFrame.")
+    if input_col is not None and input_cols is not None:
+        raise ValueError("Use either input_col or input_cols, not both.")
+    if isinstance(input_cols, str):
+        raise ValueError("input_cols must be a sequence of column names, not a string.")
 
-    Args:
-        df: pandas DataFrame to enrich.
-        input_col: column with input text.
-        output_col: new column name for results.
-        prompt: template string describing the analysis to perform on each input.
-        model: OpenAI model (default to gpt-4.1).
-        api_key: OpenAI API key.
-        show_progress: whether to display a tqdm progress bar (default True).
+    selected_cols = [input_col] if input_col is not None else list(input_cols or [])
+    invalid_column = any(
+        not isinstance(column, str) or not column for column in selected_cols
+    )
+    if not selected_cols or invalid_column:
+        raise ValueError("At least one input column must be provided.")
+    if len(set(selected_cols)) != len(selected_cols):
+        raise ValueError("Input column names must be unique.")
+    missing_cols = [column for column in selected_cols if column not in df.columns]
+    if missing_cols:
+        raise ValueError(f"DataFrame is missing input columns: {missing_cols}.")
+    if not isinstance(output_col, str) or not output_col:
+        raise ValueError("output_col must be a non-empty string.")
+    if not isinstance(prompt, str) or not prompt.strip():
+        raise ValueError("prompt must be a non-empty string.")
+    if not isinstance(max_concurrency, int) or max_concurrency < 1:
+        raise ValueError("max_concurrency must be at least 1.")
+    if not isinstance(max_retries, int) or max_retries < 0:
+        raise ValueError("max_retries cannot be negative.")
+    if retry_base_delay < 0:
+        raise ValueError("retry_base_delay cannot be negative.")
+    if on_error not in {"raise", "keep"}:
+        raise ValueError("on_error must be either 'raise' or 'keep'.")
 
-    Returns:
-        DataFrame with `output_col` added.
-    """
-    _default_openai_client(api_key)
-    texts = df[input_col].astype(str)
-    iterator = tqdm(texts, desc="Enriching") if show_progress else texts
-
-    results = []
-    for txt in iterator:
-        full_prompt = (
-            f"{prompt}. Run on input: {txt}. "
-            "Respond with only the output, without any explanations or reasoning."
-        )
-        results.append(_get_response(full_prompt, model))
-
-    df_copy = df.copy()
-    df_copy[output_col] = results
-    return df_copy
+    selected_provider = resolve_provider(
+        provider=provider,
+        api_key=api_key,
+        model=model,
+    )
+    enriched, report = run_enrichment(
+        df,
+        input_cols=selected_cols,
+        output_col=output_col,
+        prompt=prompt.strip(),
+        provider=selected_provider,
+        model=model,
+        show_progress=show_progress,
+        max_concurrency=max_concurrency,
+        max_retries=max_retries,
+        retry_base_delay=retry_base_delay,
+        on_error=on_error,
+    )
+    return (enriched, report) if return_report else enriched

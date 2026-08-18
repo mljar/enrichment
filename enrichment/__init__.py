@@ -1,10 +1,37 @@
-"""
-Enrichment package
+"""AI data enrichment for pandas DataFrames."""
 
-Provides utilities to enrich pandas DataFrames by adding new columns
-based on OpenAI-driven analysis.
-"""
+from .enricher import enrich
+from .exceptions import (
+    EnrichmentError,
+    ProviderConfigurationError,
+    ProviderError,
+    ProviderResponseError,
+    ProviderTemporaryError,
+)
+from .models import CompletionRequest, CompletionResult, EnrichmentReport
+from .providers import (
+    OpenAICompatibleProvider,
+    OpenAIProvider,
+    Provider,
+    register_provider,
+    unregister_provider,
+)
 
-from .enricher import enrich, _default_openai_client
+__version__ = "0.2.0"
 
-__version__ = "0.1.0"
+__all__ = [
+    "enrich",
+    "Provider",
+    "OpenAIProvider",
+    "OpenAICompatibleProvider",
+    "CompletionRequest",
+    "CompletionResult",
+    "EnrichmentReport",
+    "EnrichmentError",
+    "ProviderError",
+    "ProviderTemporaryError",
+    "ProviderResponseError",
+    "ProviderConfigurationError",
+    "register_provider",
+    "unregister_provider",
+]
