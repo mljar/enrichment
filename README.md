@@ -44,6 +44,10 @@ export OPENAI_API_KEY="your-api-key"
 Then call `enrich()` without configuring a provider. You can also pass
 `api_key=` directly for compatibility with earlier versions.
 
+The default OpenAI model is `gpt-5.4-nano`, selected for fast, cost-efficient
+classification and data extraction. Override it with `model=` when a task needs
+a different quality or cost profile.
+
 ## Use several input columns
 
 ```python

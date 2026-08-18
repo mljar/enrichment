@@ -9,6 +9,7 @@ from enrichment import (
     CompletionResult,
     EnrichmentError,
     OpenAICompatibleProvider,
+    OpenAIProvider,
     Provider,
     ProviderConfigurationError,
     ProviderResponseError,
@@ -294,6 +295,14 @@ def test_openai_compatible_request_and_usage():
     assert result.loc[0, "result"] == "category"
     assert report.input_tokens == 10
     assert report.output_tokens == 2
+
+
+def test_openai_provider_uses_current_enrichment_default():
+    provider = OpenAIProvider(api_key="test-key")
+    try:
+        assert provider.default_model == "gpt-5.4-nano"
+    finally:
+        provider.close()
 
 
 def test_openai_compatible_error_does_not_expose_key():

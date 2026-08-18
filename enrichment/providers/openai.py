@@ -20,7 +20,7 @@ class OpenAIProvider(OpenAICompatibleProvider):
         self,
         *,
         api_key: Optional[str] = None,
-        model: str = "gpt-4.1-mini",
+        model: str = "gpt-5.4-nano",
         timeout: float = 120.0,
         client: Optional[httpx.Client] = None,
     ) -> None:
