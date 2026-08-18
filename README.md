@@ -225,3 +225,10 @@ enrich(
 python -m pip install -e ".[dev]"
 python -m pytest
 ```
+
+Live OpenAI tests are skipped by default because they make paid API requests.
+Run them explicitly with:
+
+```bash
+RUN_LIVE_API_TESTS=1 OPENAI_API_KEY="your-api-key" python -m pytest -m live
+```

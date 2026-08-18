@@ -31,3 +31,8 @@ dev = [
 [tool.ruff]
 line-length = 88
 target-version = "py39"
+
+[tool.pytest.ini_options]
+markers = [
+  "live: makes a real, paid request to an external AI provider"
+]
