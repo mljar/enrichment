@@ -113,8 +113,51 @@ result = enrich(
 HTTP 429 responses, timeouts, network failures, and temporary server failures
 are retried with backoff. A provider's `Retry-After` response is honored.
 
-This release performs concurrent interactive requests. It does not yet submit
-provider-side asynchronous batch jobs.
+## OpenAI Batch API
+
+For large jobs that do not need immediate results, `enrich_batch()` submits an
+asynchronous OpenAI Batch API job. OpenAI processes batches within 24 hours at
+a lower price than synchronous requests. Duplicate inputs are submitted once,
+and output is restored to the original DataFrame order even when OpenAI returns
+items out of order.
+
+```python
+from enrichment import enrich_batch
+
+result, report = enrich_batch(
+    df,
+    input_col="text",
+    output_col="topic",
+    prompt="Return the main topic",
+    show_progress=True,
+    return_report=True,
+)
+
+print(report.batch_id, report.batch_status)
+```
+
+By default, the call waits for the batch and returns the enriched DataFrame.
+For a long-running job, submit it first and manage it separately:
+
+```python
+job = enrich_batch(
+    df,
+    input_col="text",
+    output_col="topic",
+    prompt="Return the main topic",
+    wait=False,
+)
+
+print(job.id, job.status)
+job.wait(poll_interval=30)
+result = job.result()
+```
+
+`job.refresh()` retrieves its current status and `job.cancel()` requests
+cancellation. A single OpenAI batch supports at most 50,000 unique requests and
+a 200 MB input file. Provider-side batches currently use the built-in
+`OpenAIProvider`; other providers can add support by implementing
+`BatchProvider`.
 
 ## Missing values and errors
 
@@ -219,6 +262,26 @@ enrich(
 
 `input_col` and `input_cols` are mutually exclusive.
 
+```python
+enrich_batch(
+    df,
+    input_col=None,
+    output_col=None,
+    prompt=None,
+    model=None,
+    api_key=None,
+    show_progress=True,
+    *,
+    input_cols=None,
+    provider=None,
+    wait=True,
+    poll_interval=10.0,
+    timeout=None,
+    on_error="raise",
+    return_report=False,
+)
+```
+
 ## Development
 
 ```bash
@@ -231,4 +294,12 @@ Run them explicitly with:
 
 ```bash
 RUN_LIVE_API_TESTS=1 OPENAI_API_KEY="your-api-key" python -m pytest -m live
+```
+
+The live Batch API test has a separate opt-in because completion can take
+several minutes:
+
+```bash
+RUN_LIVE_BATCH_TESTS=1 OPENAI_API_KEY="your-api-key" \
+  python -m pytest -m live -k batch
 ```

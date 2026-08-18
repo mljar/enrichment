@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, List, Mapping, Optional
 
 
 @dataclass(frozen=True)
@@ -24,6 +24,33 @@ class CompletionResult:
     model: Optional[str] = None
     input_tokens: Optional[int] = None
     output_tokens: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class BatchStatus:
+    """Provider-independent state of a submitted batch."""
+
+    id: str
+    status: str
+    input_file_id: Optional[str] = None
+    output_file_id: Optional[str] = None
+    error_file_id: Optional[str] = None
+    total: int = 0
+    completed: int = 0
+    failed: int = 0
+
+    @property
+    def terminal(self) -> bool:
+        return self.status in {"completed", "failed", "expired", "cancelled"}
+
+
+@dataclass(frozen=True)
+class BatchItemResult:
+    """Result or error for one custom ID in a provider batch."""
+
+    custom_id: str
+    result: Optional[CompletionResult] = None
+    error: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -52,6 +79,8 @@ class EnrichmentReport:
     elapsed_seconds: float = 0.0
     provider: str = ""
     model: Optional[str] = None
+    batch_id: Optional[str] = None
+    batch_status: Optional[str] = None
     errors: List[EnrichmentFailure] = field(default_factory=list)
 
     def add_usage(self, result: CompletionResult) -> None:

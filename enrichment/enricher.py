@@ -19,6 +19,41 @@ def _default_openai_client(api_key: Optional[str] = None) -> OpenAIProvider:
     return OpenAIProvider(api_key=api_key)
 
 
+def _validate_common_inputs(
+    df: pd.DataFrame,
+    input_col: Optional[str],
+    input_cols: Optional[Sequence[str]],
+    output_col: Optional[str],
+    prompt: Optional[str],
+) -> Tuple[Sequence[str], str, str]:
+    """Validate arguments shared by interactive and batch enrichment."""
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("df must be a pandas DataFrame.")
+    if input_col is not None and input_cols is not None:
+        raise ValueError("Use either input_col or input_cols, not both.")
+    if isinstance(input_cols, str):
+        raise ValueError(
+            "input_cols must be a sequence of column names, not a string."
+        )
+
+    selected_cols = [input_col] if input_col is not None else list(input_cols or [])
+    invalid_column = any(
+        not isinstance(column, str) or not column for column in selected_cols
+    )
+    if not selected_cols or invalid_column:
+        raise ValueError("At least one input column must be provided.")
+    if len(set(selected_cols)) != len(selected_cols):
+        raise ValueError("Input column names must be unique.")
+    missing_cols = [column for column in selected_cols if column not in df.columns]
+    if missing_cols:
+        raise ValueError(f"DataFrame is missing input columns: {missing_cols}.")
+    if not isinstance(output_col, str) or not output_col:
+        raise ValueError("output_col must be a non-empty string.")
+    if not isinstance(prompt, str) or not prompt.strip():
+        raise ValueError("prompt must be a non-empty string.")
+    return selected_cols, output_col, prompt.strip()
+
+
 def enrich(
     df: pd.DataFrame,
     input_col: Optional[str] = None,
@@ -41,28 +76,9 @@ def enrich(
     ``input_col`` remains available for single-column enrichment. Use
     ``input_cols`` when the task needs values from several columns.
     """
-    if not isinstance(df, pd.DataFrame):
-        raise TypeError("df must be a pandas DataFrame.")
-    if input_col is not None and input_cols is not None:
-        raise ValueError("Use either input_col or input_cols, not both.")
-    if isinstance(input_cols, str):
-        raise ValueError("input_cols must be a sequence of column names, not a string.")
-
-    selected_cols = [input_col] if input_col is not None else list(input_cols or [])
-    invalid_column = any(
-        not isinstance(column, str) or not column for column in selected_cols
+    selected_cols, output_col, prompt = _validate_common_inputs(
+        df, input_col, input_cols, output_col, prompt
     )
-    if not selected_cols or invalid_column:
-        raise ValueError("At least one input column must be provided.")
-    if len(set(selected_cols)) != len(selected_cols):
-        raise ValueError("Input column names must be unique.")
-    missing_cols = [column for column in selected_cols if column not in df.columns]
-    if missing_cols:
-        raise ValueError(f"DataFrame is missing input columns: {missing_cols}.")
-    if not isinstance(output_col, str) or not output_col:
-        raise ValueError("output_col must be a non-empty string.")
-    if not isinstance(prompt, str) or not prompt.strip():
-        raise ValueError("prompt must be a non-empty string.")
     if not isinstance(max_concurrency, int) or max_concurrency < 1:
         raise ValueError("max_concurrency must be at least 1.")
     if not isinstance(max_retries, int) or max_retries < 0:
@@ -81,7 +97,7 @@ def enrich(
         df,
         input_cols=selected_cols,
         output_col=output_col,
-        prompt=prompt.strip(),
+        prompt=prompt,
         provider=selected_provider,
         model=model,
         show_progress=show_progress,

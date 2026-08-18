@@ -1,12 +1,13 @@
 """Built-in enrichment providers."""
 
-from .base import Provider
+from .base import BatchProvider, Provider
 from .openai import OpenAIProvider
 from .openai_compatible import OpenAICompatibleProvider
 from .resolver import register_provider, unregister_provider
 
 __all__ = [
     "Provider",
+    "BatchProvider",
     "OpenAIProvider",
     "OpenAICompatibleProvider",
     "register_provider",
