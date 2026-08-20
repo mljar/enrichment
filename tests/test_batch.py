@@ -343,7 +343,8 @@ def test_openai_batch_http_workflow_and_output_parsing():
         path = request.url.path
         if request.method == "POST" and path == "/v1/files":
             assert b'enrichment-0' in request.content
-            assert b'gpt-5.4-nano' in request.content
+            assert b'gpt-5-nano' in request.content
+            assert b'"reasoning_effort": "minimal"' in request.content
             return httpx.Response(200, json={"id": "file-input"})
         if request.method == "POST" and path == "/v1/batches":
             body = json.loads(request.content)
@@ -384,7 +385,7 @@ def test_openai_batch_http_workflow_and_output_parsing():
                             "status_code": 200,
                             "request_id": "request-1",
                             "body": {
-                                "model": "gpt-5.4-nano",
+                                "model": "gpt-5-nano",
                                 "choices": [
                                     {"message": {"content": " positive "}}
                                 ],

@@ -30,7 +30,7 @@ def test_live_openai_enrichment():
 
     assert result.loc[0, "sentiment"].strip().lower() == "positive"
     assert report.provider == "openai"
-    assert report.model == "gpt-5.4-nano"
+    assert report.model == "gpt-5-nano"
     assert report.completed == 1
     assert report.failed == 0
     assert report.input_tokens is not None
@@ -59,7 +59,7 @@ def test_live_openai_batch_enrichment(monkeypatch):
 
     assert result.loc[0, "sentiment"].strip().lower() == "positive"
     assert report.provider == "openai"
-    assert report.model == "gpt-5.4-nano"
+    assert report.model == "gpt-5-nano"
     assert report.batch_id
     assert report.batch_status == "completed"
     assert report.completed == 1

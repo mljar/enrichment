@@ -270,7 +270,7 @@ Note that `enrich()` now returns **two** things, so you need two variables on th
 
 ## Choosing the model
 
-The default OpenAI model is `gpt-5.4-nano`. It is fast and cheap, and it's a good fit for sorting and extracting data — which is most of what people use this for.
+The default OpenAI model is `gpt-5-nano`. It is fast and cheap, and it's a good fit for sorting and extracting data — which is most of what people use this for.
 
 Need better quality on a hard task? Pick another model:
 

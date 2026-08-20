@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from enrichment import (
+    CompletionRequest,
     CompletionResult,
     EnrichmentError,
     OpenAICompatibleProvider,
@@ -300,7 +301,11 @@ def test_openai_compatible_request_and_usage():
 def test_openai_provider_uses_current_enrichment_default():
     provider = OpenAIProvider(api_key="test-key")
     try:
-        assert provider.default_model == "gpt-5.4-nano"
+        assert provider.default_model == "gpt-5-nano"
+        payload = provider.build_chat_payload(
+            CompletionRequest(instructions="Classify", input_data={"text": "hello"})
+        )
+        assert payload["reasoning_effort"] == "minimal"
     finally:
         provider.close()
 

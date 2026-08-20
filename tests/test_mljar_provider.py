@@ -106,7 +106,7 @@ def test_mljar_complete_reads_rotated_token_for_every_request(tmp_path):
             200,
             json={
                 "content": "category",
-                "model": "gpt-5.4-nano",
+                "model": "gpt-5-nano",
                 "input_tokens": 12,
                 "output_tokens": 1,
             },
@@ -274,7 +274,7 @@ def test_mljar_batch_lifecycle(tmp_path):
                         {
                             "custom_id": "item-1",
                             "content": "positive",
-                            "model": "gpt-5.4-nano",
+                            "model": "gpt-5-nano",
                             "input_tokens": 15,
                             "output_tokens": 1,
                         },

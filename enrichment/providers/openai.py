@@ -27,7 +27,7 @@ class OpenAIProvider(OpenAICompatibleProvider, BatchProvider):
         self,
         *,
         api_key: Optional[str] = None,
-        model: str = "gpt-5.4-nano",
+        model: str = "gpt-5-nano",
         timeout: float = 120.0,
         client: Optional[httpx.Client] = None,
     ) -> None:
@@ -44,6 +44,13 @@ class OpenAIProvider(OpenAICompatibleProvider, BatchProvider):
             client=client,
             name=self.name,
         )
+
+    def build_chat_payload(self, request: CompletionRequest) -> dict:
+        payload = super().build_chat_payload(request)
+        model = str(payload["model"])
+        if model == "gpt-5-nano" or model.startswith("gpt-5-nano-"):
+            payload["reasoning_effort"] = "minimal"
+        return payload
 
     def submit_batch(
         self, requests: Mapping[str, CompletionRequest]
