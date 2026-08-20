@@ -1,5 +1,7 @@
 # enrichment
 
+![Enrichment — enrich your data with AI](https://raw.githubusercontent.com/mljar/enrichment/main/media/enrichment-banner.webp)
+
 **Add AI columns to your pandas DataFrame.**
 
 [![PyPI](https://img.shields.io/pypi/v/enrichment)](https://pypi.org/project/enrichment/)
