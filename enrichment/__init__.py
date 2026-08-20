@@ -1,9 +1,9 @@
 """AI data enrichment for pandas DataFrames."""
 
 from .enricher import enrich
-from .batch import EnrichmentBatchJob, enrich_batch
 from .exceptions import (
     EnrichmentError,
+    ProviderAuthenticationError,
     ProviderConfigurationError,
     ProviderError,
     ProviderResponseError,
@@ -19,6 +19,7 @@ from .models import (
 from .providers import (
     OpenAICompatibleProvider,
     OpenAIProvider,
+    MLJARProvider,
     BatchProvider,
     Provider,
     register_provider,
@@ -29,10 +30,9 @@ __version__ = "0.3.0"
 
 __all__ = [
     "enrich",
-    "enrich_batch",
-    "EnrichmentBatchJob",
     "Provider",
     "BatchProvider",
+    "MLJARProvider",
     "OpenAIProvider",
     "OpenAICompatibleProvider",
     "CompletionRequest",
@@ -42,6 +42,7 @@ __all__ = [
     "EnrichmentReport",
     "EnrichmentError",
     "ProviderError",
+    "ProviderAuthenticationError",
     "ProviderTemporaryError",
     "ProviderResponseError",
     "ProviderConfigurationError",

@@ -5,7 +5,7 @@ import os
 import pandas as pd
 import pytest
 
-from enrichment import enrich, enrich_batch
+from enrichment import enrich
 
 
 pytestmark = pytest.mark.live
@@ -41,11 +41,12 @@ def test_live_openai_enrichment():
     os.getenv("RUN_LIVE_BATCH_TESTS") != "1",
     reason="Set RUN_LIVE_BATCH_TESTS=1 to enable the paid Batch API test.",
 )
-def test_live_openai_batch_enrichment():
+def test_live_openai_batch_enrichment(monkeypatch):
     if not os.getenv("OPENAI_API_KEY"):
         pytest.fail("OPENAI_API_KEY is required for live API tests.")
 
-    result, report = enrich_batch(
+    monkeypatch.setattr("enrichment.enricher.AUTO_BATCH_THRESHOLD", 1)
+    result, report = enrich(
         pd.DataFrame({"text": ["This is an excellent product."]}),
         input_col="text",
         output_col="sentiment",

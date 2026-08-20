@@ -14,6 +14,7 @@ class CompletionRequest:
     input_data: Mapping[str, Any]
     model: Optional[str] = None
     response_schema: Optional[Mapping[str, Any]] = None
+    request_id: Optional[str] = None
 
 
 @dataclass(frozen=True)

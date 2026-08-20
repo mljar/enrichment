@@ -6,12 +6,15 @@ from typing import Optional, Sequence, Tuple, Union
 
 import pandas as pd
 
-from .engine import run_enrichment
+from .engine import _prepare_work, run_enrichment
 from .exceptions import EnrichmentError
 from .models import EnrichmentReport
-from .providers.base import Provider
+from .providers.base import BatchProvider, Provider
 from .providers.openai import OpenAIProvider
 from .providers.resolver import resolve_provider
+
+
+AUTO_BATCH_THRESHOLD = 50
 
 
 def _default_openai_client(api_key: Optional[str] = None) -> OpenAIProvider:
@@ -68,6 +71,7 @@ def enrich(
     max_concurrency: int = 5,
     max_retries: int = 3,
     retry_base_delay: float = 0.5,
+    use_batch: Optional[bool] = None,
     on_error: str = "raise",
     return_report: bool = False,
 ) -> Union[pd.DataFrame, Tuple[pd.DataFrame, EnrichmentReport]]:
@@ -85,6 +89,8 @@ def enrich(
         raise ValueError("max_retries cannot be negative.")
     if retry_base_delay < 0:
         raise ValueError("retry_base_delay cannot be negative.")
+    if use_batch is not None and not isinstance(use_batch, bool):
+        raise ValueError("use_batch must be True, False, or None.")
     if on_error not in {"raise", "keep"}:
         raise ValueError("on_error must be either 'raise' or 'keep'.")
 
@@ -93,6 +99,36 @@ def enrich(
         api_key=api_key,
         model=model,
     )
+    prepared_work = _prepare_work(df, selected_cols)
+    work_items, _ = prepared_work
+    should_use_batch = use_batch is True or (
+        use_batch is None
+        and isinstance(selected_provider, BatchProvider)
+        and len(work_items) >= AUTO_BATCH_THRESHOLD
+    )
+    if should_use_batch:
+        if not isinstance(selected_provider, BatchProvider):
+            raise TypeError(
+                f"Provider '{selected_provider.name}' does not support "
+                "provider-side batches."
+            )
+        # Import locally to avoid a module cycle around shared input validation.
+        # Users still get the same synchronous DataFrame result.
+        from .batch import _enrich_batch
+
+        return _enrich_batch(
+            df,
+            output_col=output_col,
+            prompt=prompt,
+            model=model,
+            show_progress=show_progress,
+            input_cols=selected_cols,
+            provider=selected_provider,
+            on_error=on_error,
+            return_report=return_report,
+            _prepared_work=prepared_work,
+        )
+
     enriched, report = run_enrichment(
         df,
         input_cols=selected_cols,
@@ -105,5 +141,6 @@ def enrich(
         max_retries=max_retries,
         retry_base_delay=retry_base_delay,
         on_error=on_error,
+        prepared_work=prepared_work,
     )
     return (enriched, report) if return_report else enriched

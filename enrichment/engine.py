@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import random
 import time
+import uuid
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -138,6 +139,7 @@ def run_enrichment(
     max_retries: int,
     retry_base_delay: float,
     on_error: str,
+    prepared_work: Optional[Tuple[List[_WorkItem], List[int]]] = None,
 ) -> Tuple[pd.DataFrame, EnrichmentReport]:
     """Run enrichment and return the copied DataFrame and execution report."""
     started = time.monotonic()
@@ -146,7 +148,7 @@ def run_enrichment(
         provider=provider.name,
         model=model or provider.default_model,
     )
-    work_items, skipped_positions = _prepare_work(df, input_cols)
+    work_items, skipped_positions = prepared_work or _prepare_work(df, input_cols)
     report.unique_requests = len(work_items)
     report.skipped = len(skipped_positions)
 
@@ -164,6 +166,7 @@ def run_enrichment(
                 instructions=prompt,
                 input_data=item.input_data,
                 model=model,
+                request_id=f"enrichment-{uuid.uuid4().hex}",
             )
             future = executor.submit(
                 _run_request,

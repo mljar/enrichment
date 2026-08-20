@@ -341,6 +341,7 @@ def test_registered_provider_has_priority_over_environment(monkeypatch):
 
 def test_missing_provider_configuration_has_clear_error(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("MLJAR_RUNTIME_TOKEN_FILE", raising=False)
     with pytest.raises(ProviderConfigurationError, match="No AI provider"):
         resolve_provider()
 

@@ -9,12 +9,12 @@ from enrichment import (
     BatchProvider,
     BatchStatus,
     CompletionResult,
-    EnrichmentBatchJob,
     EnrichmentError,
     OpenAIProvider,
     Provider,
-    enrich_batch,
+    enrich,
 )
+from enrichment.batch import EnrichmentBatchJob, _enrich_batch
 
 
 class RecordingBatchProvider(BatchProvider):
@@ -57,6 +57,147 @@ class RecordingBatchProvider(BatchProvider):
         return BatchStatus(id=batch_id, status="cancelling")
 
 
+class AutomaticBatchProvider(RecordingBatchProvider):
+    def __init__(self):
+        super().__init__()
+        self.concurrent_requests = []
+
+    def complete(self, request):
+        self.concurrent_requests.append(request)
+        return CompletionResult(content="concurrent")
+
+    def submit_batch(self, requests):
+        self.results = {
+            custom_id: BatchItemResult(
+                custom_id=custom_id,
+                result=CompletionResult(content="batched"),
+            )
+            for custom_id in requests
+        }
+        return super().submit_batch(requests)
+
+
+def test_enrich_automatically_uses_batch_for_many_unique_inputs():
+    provider = AutomaticBatchProvider()
+    source = pd.DataFrame({"text": [f"row-{i}" for i in range(50)]})
+
+    result, report = enrich(
+        source,
+        "text",
+        "result",
+        "Classify",
+        provider=provider,
+        show_progress=False,
+        return_report=True,
+    )
+
+    assert len(provider.requests) == 50
+    assert provider.concurrent_requests == []
+    assert set(result["result"]) == {"batched"}
+    assert report.batch_id == "batch-1"
+
+
+def test_enrich_keeps_concurrent_path_for_small_jobs():
+    provider = AutomaticBatchProvider()
+
+    result, report = enrich(
+        pd.DataFrame({"text": ["first", "second"]}),
+        "text",
+        "result",
+        "Classify",
+        provider=provider,
+        show_progress=False,
+        return_report=True,
+    )
+
+    assert len(provider.concurrent_requests) == 2
+    assert provider.requests == {}
+    assert set(result["result"]) == {"concurrent"}
+    assert report.batch_id is None
+
+
+def test_duplicate_rows_do_not_trigger_automatic_batch():
+    provider = AutomaticBatchProvider()
+
+    enrich(
+        pd.DataFrame({"text": ["same"] * 50}),
+        "text",
+        "result",
+        "Classify",
+        provider=provider,
+        show_progress=False,
+    )
+
+    assert len(provider.concurrent_requests) == 1
+    assert provider.requests == {}
+
+
+def test_enrich_can_force_batch_for_a_small_job():
+    provider = AutomaticBatchProvider()
+
+    result, report = enrich(
+        pd.DataFrame({"text": ["first", "second"]}),
+        "text",
+        "result",
+        "Classify",
+        provider=provider,
+        use_batch=True,
+        show_progress=False,
+        return_report=True,
+    )
+
+    assert len(provider.requests) == 2
+    assert provider.concurrent_requests == []
+    assert set(result["result"]) == {"batched"}
+    assert report.batch_id == "batch-1"
+
+
+def test_enrich_can_disable_batch_for_a_large_job():
+    provider = AutomaticBatchProvider()
+
+    result, report = enrich(
+        pd.DataFrame({"text": [f"row-{i}" for i in range(50)]}),
+        "text",
+        "result",
+        "Classify",
+        provider=provider,
+        use_batch=False,
+        show_progress=False,
+        return_report=True,
+    )
+
+    assert len(provider.concurrent_requests) == 50
+    assert provider.requests == {}
+    assert set(result["result"]) == {"concurrent"}
+    assert report.batch_id is None
+
+
+def test_forced_batch_requires_a_batch_provider():
+    with pytest.raises(TypeError, match="does not support provider-side batches"):
+        enrich(
+            pd.DataFrame({"text": ["hello"]}),
+            "text",
+            "result",
+            "Classify",
+            provider=SynchronousOnlyProvider(),
+            use_batch=True,
+            show_progress=False,
+        )
+
+
+def test_use_batch_rejects_non_boolean_values():
+    with pytest.raises(ValueError, match="True, False, or None"):
+        enrich(
+            pd.DataFrame({"text": ["hello"]}),
+            "text",
+            "result",
+            "Classify",
+            provider=SynchronousOnlyProvider(),
+            use_batch="yes",
+            show_progress=False,
+        )
+
+
 def test_batch_maps_out_of_order_results_and_deduplicates_inputs():
     provider = RecordingBatchProvider(
         results={
@@ -80,7 +221,7 @@ def test_batch_maps_out_of_order_results_and_deduplicates_inputs():
     )
     source = pd.DataFrame({"text": ["same", "same", "different", None]})
 
-    result, report = enrich_batch(
+    result, report = _enrich_batch(
         source,
         "text",
         "result",
@@ -114,7 +255,7 @@ def test_batch_can_keep_item_failures():
         }
     )
 
-    result, report = enrich_batch(
+    result, report = _enrich_batch(
         pd.DataFrame({"text": ["hello"]}, index=[42]),
         "text",
         "result",
@@ -142,7 +283,7 @@ def test_batch_raises_with_dataframe_context_for_item_failure():
     )
 
     with pytest.raises(EnrichmentError) as caught:
-        enrich_batch(
+        _enrich_batch(
             pd.DataFrame({"text": ["hello"]}, index=[42]),
             "text",
             "result",
@@ -159,7 +300,7 @@ def test_batch_raises_with_dataframe_context_for_item_failure():
 def test_batch_can_be_managed_without_waiting():
     provider = RecordingBatchProvider()
 
-    job = enrich_batch(
+    job = _enrich_batch(
         pd.DataFrame({"text": ["hello"]}),
         "text",
         "result",
@@ -184,7 +325,7 @@ class SynchronousOnlyProvider(Provider):
 
 def test_batch_rejects_provider_without_batch_support():
     with pytest.raises(TypeError, match="does not support provider-side batches"):
-        enrich_batch(
+        _enrich_batch(
             pd.DataFrame({"text": ["hello"]}),
             "text",
             "result",
@@ -263,7 +404,7 @@ def test_openai_batch_http_workflow_and_output_parsing():
     client = httpx.Client(transport=httpx.MockTransport(handler))
     provider = OpenAIProvider(api_key="test-key", client=client)
 
-    result, report = enrich_batch(
+    result, report = _enrich_batch(
         pd.DataFrame({"text": ["great"]}),
         "text",
         "sentiment",

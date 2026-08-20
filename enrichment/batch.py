@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import time
-from typing import Dict, Mapping, Optional, Sequence, Tuple, Union
+import uuid
+from typing import Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import pandas as pd
 from tqdm.auto import tqdm
@@ -172,7 +173,7 @@ class EnrichmentBatchJob:
         return (enriched, report) if return_report else enriched
 
 
-def enrich_batch(
+def _enrich_batch(
     df: pd.DataFrame,
     input_col: Optional[str] = None,
     output_col: Optional[str] = None,
@@ -188,12 +189,13 @@ def enrich_batch(
     timeout: Optional[float] = None,
     on_error: str = "raise",
     return_report: bool = False,
+    _prepared_work: Optional[Tuple[List[_WorkItem], List[int]]] = None,
 ) -> Union[
     EnrichmentBatchJob,
     pd.DataFrame,
     Tuple[pd.DataFrame, EnrichmentReport],
 ]:
-    """Enrich a DataFrame through a provider-side asynchronous batch."""
+    """Internal provider-side asynchronous batch implementation."""
     selected_cols, output_col, prompt = _validate_common_inputs(
         df, input_col, input_cols, output_col, prompt
     )
@@ -213,7 +215,7 @@ def enrich_batch(
             "provider-side batches."
         )
 
-    work, skipped_positions = _prepare_work(df, selected_cols)
+    work, skipped_positions = _prepared_work or _prepare_work(df, selected_cols)
     work_items: Dict[str, _WorkItem] = {
         f"enrichment-{position}": item for position, item in enumerate(work)
     }
@@ -223,6 +225,7 @@ def enrich_batch(
                 instructions=prompt,
                 input_data=item.input_data,
                 model=model,
+                request_id=f"enrichment-{uuid.uuid4().hex}",
             )
             for custom_id, item in work_items.items()
         }

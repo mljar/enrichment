@@ -34,6 +34,10 @@ class ProviderError(EnrichmentError):
     retryable = False
 
 
+class ProviderAuthenticationError(ProviderError):
+    """Raised when provider credentials are missing, expired, or invalid."""
+
+
 class ProviderTemporaryError(ProviderError):
     """A temporary provider error that can be retried."""
 

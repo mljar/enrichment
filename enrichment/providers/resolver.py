@@ -9,6 +9,7 @@ from typing import Dict, Optional
 
 from ..exceptions import ProviderConfigurationError
 from .base import Provider
+from .mljar import MLJARProvider
 from .openai import OpenAIProvider
 
 
@@ -48,17 +49,26 @@ def resolve_provider(
     if provider is not None:
         return provider
 
-    with _lock:
-        if _providers:
-            return max(_providers.values(), key=lambda item: item.priority).provider
-
-    if api_key or os.getenv("OPENAI_API_KEY"):
+    if api_key:
         kwargs = {"api_key": api_key}
         if model:
             kwargs["model"] = model
         return OpenAIProvider(**kwargs)
 
+    with _lock:
+        if _providers:
+            return max(_providers.values(), key=lambda item: item.priority).provider
+
+    if MLJARProvider.runtime_token_available():
+        return MLJARProvider()
+
+    if os.getenv("OPENAI_API_KEY"):
+        kwargs = {}
+        if model:
+            kwargs["model"] = model
+        return OpenAIProvider(**kwargs)
+
     raise ProviderConfigurationError(
-        "No AI provider is configured. Pass provider=..., provide api_key=..., "
-        "or set OPENAI_API_KEY."
+        "No AI provider is configured. Sign in to MLJAR Studio, pass "
+        "provider=..., provide api_key=..., or set OPENAI_API_KEY."
     )
