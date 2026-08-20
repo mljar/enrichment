@@ -5,7 +5,6 @@
 **Add AI columns to your pandas DataFrame.**
 
 [![PyPI](https://img.shields.io/pypi/v/enrichment)](https://pypi.org/project/enrichment/)
-[![Python](https://img.shields.io/pypi/pyversions/enrichment)](https://pypi.org/project/enrichment/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
 You have a table. You want a new column that only a human could fill in — like "is this review happy or angry?" or "what industry is this company in?".
