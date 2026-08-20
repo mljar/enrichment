@@ -26,7 +26,7 @@ from .providers import (
     unregister_provider,
 )
 
-__version__ = "0.4.0"
+__version__ = "1.0.0"
 
 __all__ = [
     "enrich",
