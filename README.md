@@ -38,47 +38,6 @@ That is the whole idea. One function, one sentence of instructions, one new colu
 
 ---
 
-## Install
-
-```bash
-pip install enrichment
-```
-
-You also need pandas, which comes along with the install.
-
----
-
-## Get an API key
-
-`enrichment` does not have its own AI. It talks to an AI provider for you. The easiest one to start with is OpenAI.
-
-1. Go to [platform.openai.com](https://platform.openai.com/api-keys) and create an account.
-2. Add a payment method (you pay for what you use — usually cents for small tables).
-3. Create an API key and copy it. It looks like `sk-...`.
-4. Tell your computer about it:
-
-**Mac / Linux:**
-
-```bash
-export OPENAI_API_KEY="your-api-key"
-```
-
-**Windows (PowerShell):**
-
-```powershell
-$env:OPENAI_API_KEY="your-api-key"
-```
-
-Or, if you prefer, pass it straight to the function:
-
-```python
-enrich(df, ..., api_key="your-api-key")
-```
-
-> **Using MLJAR Studio?** You can skip this whole section. Studio signs you in and picks the provider for you. No API key needed.
-
----
-
 ## Your first enrichment
 
 ```python
@@ -362,6 +321,47 @@ Mostly, but AI models can vary a little. For anything important, check a sample 
 
 ---
 
+## Install
+
+```bash
+pip install enrichment
+```
+
+You also need pandas, which comes along with the install.
+
+---
+
+## Get an API key
+
+`enrichment` does not have its own AI. It talks to an AI provider for you. The easiest one to start with is OpenAI.
+
+1. Go to [platform.openai.com](https://platform.openai.com/api-keys) and create an account.
+2. Add a payment method (you pay for what you use — usually cents for small tables).
+3. Create an API key and copy it. It looks like `sk-...`.
+4. Tell your computer about it:
+
+**Mac / Linux:**
+
+```bash
+export OPENAI_API_KEY="your-api-key"
+```
+
+**Windows (PowerShell):**
+
+```powershell
+$env:OPENAI_API_KEY="your-api-key"
+```
+
+Or, if you prefer, pass it straight to the function:
+
+```python
+enrich(df, ..., api_key="your-api-key")
+```
+
+> **Using MLJAR Studio?** You can skip this whole section. Studio signs you in and picks the provider for you. No API key needed.
+
+---
+
 ## For advanced users
 
 <details>
@@ -407,24 +407,6 @@ Providers are chosen in this order:
 3. Highest-priority registered runtime provider
 4. MLJAR account token from `MLJAR_RUNTIME_TOKEN_FILE`
 5. OpenAI configured through `OPENAI_API_KEY`
-
-</details>
-
-<details>
-<summary><b>MLJAR hosted provider</b></summary>
-
-MLJAR Studio configures the hosted provider with two environment variables:
-
-```text
-MLJAR_RUNTIME_TOKEN_FILE
-MLJAR_RUNTIME_LICENSING_BASE_URL
-```
-
-`MLJAR_RUNTIME_TOKEN_FILE` holds a **path**, not the token itself. The provider reads the account token from that file and sends it with standard token authentication. No device header, legacy JWT, or extra AI session token is used.
-
-The file is read again for every operation, so login, logout, and token rotation take effect without restarting Jupyter.
-
-If the file is missing or empty, provider selection can fall back to `OPENAI_API_KEY`. If the file contains an invalid token or cannot be read, the operation fails with a sign-in error instead of silently charging your OpenAI account.
 
 </details>
 
